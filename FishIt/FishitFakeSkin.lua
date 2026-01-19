@@ -1,3 +1,14 @@
+-- PASTE INI PALING ATAS (sebagian sudah ada, tapi dipastikan ulang)
+local Players = game:GetService("Players")
+local player = Players.LocalPlayer
+local pGui = player:WaitForChild("PlayerGui")
+
+-- HAPUS GUI & MODEL LAMA (kalau ada)
+local old = pGui:FindFirstChild("HolyTridentFakeGui")
+if old then old:Destroy() end
+for _,v in ipairs(workspace:GetChildren()) do
+    if v.Name == "FakeHolyTrident" and v:IsA("Model") then v:Destroy() end
+end
 -- FishItFakeSkin.lua  (single-file, public release)
 -- Visual-only Holy Trident skin + cast anim for Fish It! & any fishing rod
 -- Author: muelharr
@@ -152,15 +163,21 @@ local function doAnim()
 end
 -- Hook tool.Activated (tidak ganggu fungsi asli game)
 local function hookToolActivated()
-    while task.wait(1) do
-        local char = player.Character or player.CharacterAdded:Wait()
-        local t = char:FindFirstChildOfClass("Tool")
-        if t and t.Name:lower():find("rod") and not t:FindFirstChild("ActivatedHook") then
-            local conn; conn = t.Activated:Connect(function() doAnim() end)
-            local tag = Instance.new("BoolValue"); tag.Name = "ActivatedHook"; tag.Parent = t
-            t:GetPropertyChangedSignal("Parent"):Connect(function() if not t.Parent then conn:Disconnect(); tag:Destroy() end end)
-        end
-    end
+    local con
+    con = player.Character.ChildAdded:Connect(function(c)
+        if not c:IsA("Tool") then return end
+        if not c.Name:lower():find("rod") then return end
+        if c:FindFirstChild("ActivatedHook") then return end  -- sudah di-hook
+
+        local tag = Instance.new("BoolValue"); tag.Name = "ActivatedHook"; tag.Parent = c
+        local inner
+        inner = c.Activated:Connect(function()
+            if enabled and fakeModel then doAnim() end
+        end)
+        c.AncestryChanged:Connect(function()
+            if not c.Parent then tag:Destroy(); inner:Disconnect() end
+        end)
+    end)
 end
 task.spawn(hookToolActivated)
 
