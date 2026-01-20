@@ -1,7 +1,9 @@
--- FishItFakeSkin.lua  v1.0.3  (public loader)
--- Visual-only Holy Trident + anim + close button
+-- FishItFakeSkin.lua v1.0.4 (public loader)
+-- Visual-only Holy Trident + anim + minimize + real slider
+-- Untuk Roblox Executor (Synapse, Delta, Fluxus, dll.)
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
 local player = Players.LocalPlayer
 local pGui = player:WaitForChild("PlayerGui")
 
@@ -26,7 +28,7 @@ local CONFIG = {
 
 ---------- UTIL ----------
 local function weld(c,p)
-    local w = Instance.new("Weld"); w.Part0,p.Part1 = p,c
+    local w = Instance.new("Weld"); w.Part0,w.Part1 = p,c
     w.C0 = c.CFrame:inverse() * p.CFrame; w.Parent = c; return w
 end
 local function playSound(id,par)
@@ -81,20 +83,17 @@ local function onUnequip()
     if fakeModel then fakeModel:Destroy(); fakeModel = nil end
 end
 
----------- AUTO EQUIP / CHECK ----------
+---------- AUTO EQUIP ----------
 local function checkAndEquip()
-    -- 1. cek character
     local char = player.Character or player.CharacterAdded:Wait()
     local t = char:FindFirstChildOfClass("Tool")
     if t then doEquip(t); return end
-    -- 2. cek backpack, equip paksa
     local bp = player:FindFirstChildOfClass("Backpack")
     if bp then
         for _,v in ipairs(bp:GetChildren()) do
             if v:IsA("Tool") and string.find(v.Name:lower(), "rod") then
                 local hum = char:WaitForChild("Humanoid")
-                hum:EquipTool(v)
-                break
+                hum:EquipTool(v); break
             end
         end
     end
@@ -106,7 +105,7 @@ end)
 if player.Character then checkAndEquip() end
 player.Backpack.ChildAdded:Connect(function(t) if t:IsA("Tool") then checkAndEquip() end end)
 
----------- CAST ANIM ----------
+---------- CAST ----------
 local isCasting = false
 local function playCast()
     if not enabled or isCasting or not fakeModel then return end
@@ -116,7 +115,6 @@ local function playCast()
     task.wait(castTrack.Length / speedMul)
     castTrack:Stop(); idleTrack:Play(); isCasting = false
 end
--- safe hook Activated
 local function hookActivated()
     while task.wait(1) do
         local char = player.Character or player.CharacterAdded:Wait()
@@ -142,32 +140,49 @@ local title = Instance.new("TextLabel")
 title.Size = UDim2.new(1,0,0,24); title.BackgroundTransparency = 1; title.Text = "Holy Trident Fake"; title.Font = Enum.Font.GothamBold
 title.TextColor3 = Color3.new(1,1,1); title.TextScaled = true; title.Parent = frame
 
+-- TOMBOL MINIMIZE (sebelah X)
+local minBtn = Instance.new("TextButton")
+minBtn.Size = UDim2.new(0,20,0,20); minBtn.Position = UDim2.new(1,-50,0,5)
+minBtn.BackgroundColor3 = Color3.fromRGB(255,200,0); minBtn.Text = "_"
+minBtn.Font = Enum.Font.GothamBold; minBtn.TextColor3 = Color3.new(1,1,1); minBtn.TextScaled = true
+Instance.new("UICorner",minBtn); minBtn.Parent = frame
+
+-- TOMBOL CLOSE
+local closeBtn = Instance.new("TextButton")
+closeBtn.Size = UDim2.new(0,20,0,20); closeBtn.Position = UDim2.new(1,-25,0,5)
+closeBtn.BackgroundColor3 = Color3.fromRGB(255,70,70); closeBtn.Text = "X"
+closeBtn.Font = Enum.Font.GothamBold; closeBtn.TextColor3 = Color3.new(1,1,1); closeBtn.TextScaled = true
+Instance.new("UICorner",closeBtn); closeBtn.Parent = frame
+
 local tog = Instance.new("TextButton")
 tog.Size = UDim2.new(0,90,0,32); tog.Position = UDim2.new(.5,-45,.25,0)
 tog.BackgroundColor3 = Color3.fromRGB(0,170,255); tog.Text = "OFF"
 tog.Font = Enum.Font.GothamSemibold; tog.TextColor3 = Color3.new(1,1,1); tog.TextScaled = true
 Instance.new("UICorner",tog); tog.Parent = frame
 
-local closeBtn = Instance.new("TextButton") -- TOMBOL CLOSE
-closeBtn.Size = UDim2.new(0,20,0,20); closeBtn.Position = UDim2.new(1,-25,0,5)
-closeBtn.BackgroundColor3 = Color3.fromRGB(255,70,70); closeBtn.Text = "X"
-closeBtn.Font = Enum.Font.GothamBold; closeBtn.TextColor3 = Color3.new(1,1,1); closeBtn.TextScaled = true
-Instance.new("UICorner",closeBtn); closeBtn.Parent = frame
+-- SLIDER (custom, bukan Instance Slider)
+local sliderBg = Instance.new("Frame")
+sliderBg.Size = UDim2.new(0,120,0,16); sliderBg.Position = UDim2.new(0.5,-10,0,80)
+sliderBg.BackgroundColor3 = Color3.fromRGB(50,50,50); Instance.new("UICorner",sliderBg); sliderBg.Parent = frame
+
+local sliderFill = Instance.new("Frame")
+sliderFill.Size = UDim2.new(0.5,0,1,0); sliderFill.BackgroundColor3 = Color3.fromRGB(0,170,255)
+sliderFill.BorderSizePixel = 0; Instance.new("UICorner",sliderFill); sliderFill.Parent = sliderBg
+
+local sliderBtn = Instance.new("TextButton")
+sliderBtn.Size = UDim2.new(0,20,0,20); sliderBtn.Position = UDim2.new(0.5,-10,-0.2,0)
+sliderBtn.BackgroundColor3 = Color3.fromRGB(255,255,255); sliderBtn.Text = ""; sliderBtn.Parent = sliderBg
+Instance.new("UICorner",sliderBtn)
 
 local speedLab = Instance.new("TextLabel")
 speedLab.Size = UDim2.new(0,50,0,20); speedLab.Position = UDim2.new(0,10,0,80)
 speedLab.BackgroundTransparency = 1; speedLab.Text = "Speed"; speedLab.Font = Enum.Font.Gotham; speedLab.TextScaled = true
 speedLab.TextColor3 = Color3.new(1,1,1); speedLab.Parent = frame
 
-local slider = Instance.new("Slider")
-slider.Size = UDim2.new(0,120,0,16); slider.Position = UDim2.new(0.5,-10,0,80)
-slider.MinValue = 0.2; slider.MaxValue = 2; slider.Value = 1; slider.Step = 0.1; slider.Parent = frame
-Instance.new("UICorner",slider.SliderBar)
-
----------- DRAG ----------
+-- DRAG
 local dragInput,dragStart,startPos,dragging
 frame.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 and input.Position.Y < frame.Position.Y.Offset + 24 then
+    if input.UserInputType == Enum.UserInputType.MouseButton1 and input.Position.Y < frame.AbsolutePosition.Y + 30 then
         dragging = true; dragStart = input.Position; startPos = frame.Position
         input.Changed:Connect(function() if input.UserInputState == Enum.UserInputState.End then dragging = false end end)
     end
@@ -180,21 +195,45 @@ UserInputService.InputChanged:Connect(function(input)
     end
 end)
 
----------- GUI INTERACT ----------
+-- SLIDER LOGIC
+local isSliding = false
+sliderBtn.MouseButton1Down:Connect(function() isSliding = true end)
+UserInputService.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then isSliding = false end
+end)
+UserInputService.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement and isSliding then
+        local relX = input.Position.X - sliderBg.AbsolutePosition.X
+        local percent = math.clamp(relX / sliderBg.AbsoluteSize.X, 0, 1)
+        sliderFill.Size = UDim2.new(percent,0,1,0)
+        sliderBtn.Position = UDim2.new(percent, -10, -0.2, 0)
+        setSpeed(0.2 + (percent * 1.8)) -- 0.2 to 2.0
+    end
+end)
+
+-- MINIMIZE
+local minimized = false
+minBtn.MouseButton1Click:Connect(function()
+    minimized = not minimized
+    if minimized then
+        TweenService:Create(frame,TweenInfo.new(.3),{Size = UDim2.fromOffset(220,30)}):Play()
+        speedLab.Visible = false; sliderBg.Visible = false; tog.Visible = false
+    else
+        TweenService:Create(frame,TweenInfo.new(.3),{Size = UDim2.fromOffset(220,160)}):Play()
+        speedLab.Visible = true; sliderBg.Visible = true; tog.Visible = true
+    end
+end)
+
+-- GUI INTERACT
 local active = false
 tog.MouseButton1Click:Connect(function()
     active = not active; tog.Text = active and "ON" or "OFF"
     tog.BackgroundColor3 = active and Color3.fromRGB(0,255,123) or Color3.fromRGB(0,170,255)
-    if active then
-        checkAndEquip()
-    else
-        onUnequip()
-    end
+    if active then checkAndEquip() else onUnequip() end
 end)
-closeBtn.MouseButton1Click:Connect(function() screen:Destroy(); onUnequip() end) -- TUTUP GUI
-slider.Changed:Connect(function() setSpeed(slider.Value) end)
+closeBtn.MouseButton1Click:Connect(function() screen:Destroy(); onUnequip() end)
 
----------- HOTKEY & CLEANUP ----------
+-- HOTKEY & CLEANUP
 UserInputService.InputBegan:Connect(function(inp, g)
     if g then return end
     if inp.KeyCode == CONFIG.HOTKEY then
@@ -204,7 +243,6 @@ UserInputService.InputBegan:Connect(function(inp, g)
     end
 end)
 player.CharacterRemoving:Connect(onUnequip)
--- chat command
 player.Chatted:Connect(function(m) if m:lower() == "/removefake" then screen:Destroy(); onUnequip() end end)
 
-print("[FishItFakeSkin] Loaded! Press F6 to toggle GUI. Chat /removefake to close.")
+print("[FishItFakeSkin] Loaded! Press F6 to toggle. /removefake to close.")
